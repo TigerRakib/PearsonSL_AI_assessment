@@ -5,6 +5,7 @@ from app.api.dependencies.storage import get_storage
 from app.api.schemas.mime import MimeRoute
 from app.api.schemas.preprocessing import ImagePreprocessingResult
 from app.api.schemas.uploads import DeleteResponse, UploadedFile, UploadList
+from app.models.document import ExtractedDocument
 from app.storage.file_store import FileStorage
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -60,6 +61,18 @@ async def preprocess_file_for_ocr(
     storage: FileStorage = Depends(get_storage),
 ) -> ImagePreprocessingResult:
     return storage.preprocess_for_ocr(file_id)
+
+
+@router.post(
+    "/{file_id}/extract",
+    response_model=ExtractedDocument,
+    summary="Extract text from an uploaded PDF",
+)
+async def extract_file(
+    file_id: str,
+    storage: FileStorage = Depends(get_storage),
+) -> ExtractedDocument:
+    return storage.extract(file_id)
 
 
 @router.delete(

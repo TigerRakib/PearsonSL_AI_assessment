@@ -8,6 +8,7 @@ from fastapi import HTTPException, UploadFile, status
 
 from app.api.schemas.uploads import UploadedFile
 from app.ingestion.image_processor import preprocess_image_for_ocr
+from app.ingestion.pdf_extractor import extract_pdf_text
 from app.ingestion.router import route_mime
 
 CHUNK_SIZE = 1024 * 1024
@@ -102,6 +103,17 @@ class FileStorage:
         source_path = self.get_download_path(file_id)
         output_path = self.upload_dir / "preprocessed" / f"{file_id}.png"
         return preprocess_image_for_ocr(source_path, output_path)
+
+    def extract(self, file_id: str):
+        uploaded_file = self.get(file_id)
+        if uploaded_file.mime_route.route != "pdf":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only PDF extraction is implemented at this stage.",
+            )
+
+        path = self.get_download_path(file_id)
+        return extract_pdf_text(file_id, uploaded_file.original_filename, path)
 
     def delete(self, file_id: str) -> None:
         uploaded_file = self.get(file_id)

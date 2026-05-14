@@ -83,6 +83,9 @@ curl http://localhost:8000/files
 # Inspect MIME routing for an upload
 curl http://localhost:8000/files/{file_id}/route
 
+# Extract embedded PDF text
+curl -X POST http://localhost:8000/files/{file_id}/extract
+
 # Preprocess an image upload for OCR
 curl -X POST http://localhost:8000/files/{file_id}/preprocess
 

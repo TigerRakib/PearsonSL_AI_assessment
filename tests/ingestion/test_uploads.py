@@ -64,3 +64,37 @@ def test_rejects_file_over_size_limit(tmp_path):
 
     assert response.status_code == 413
     app.dependency_overrides.clear()
+
+
+def test_extract_uploaded_pdf(tmp_path):
+    import fitz
+
+    app.dependency_overrides[get_storage] = lambda: FileStorage(str(tmp_path), 1)
+    client = TestClient(app)
+
+    pdf_path = tmp_path / "contract.pdf"
+    document = fitz.open()
+    page = document.new_page()
+    page.insert_text(
+        (72, 72),
+        "This uploaded contract contains enough embedded text for extraction.",
+    )
+    document.save(pdf_path)
+    document.close()
+
+    upload_response = client.post(
+        "/files",
+        files={"file": ("contract.pdf", pdf_path.read_bytes(), "application/pdf")},
+    )
+    assert upload_response.status_code == 201
+
+    uploaded_file = upload_response.json()
+    extract_response = client.post(f"/files/{uploaded_file['id']}/extract")
+
+    assert extract_response.status_code == 200
+    extracted = extract_response.json()
+    assert extracted["file_id"] == uploaded_file["id"]
+    assert extracted["page_count"] == 1
+    assert extracted["quality"]["level"] == "good"
+    assert "uploaded contract" in extracted["pages"][0]["text"]
+    app.dependency_overrides.clear()
