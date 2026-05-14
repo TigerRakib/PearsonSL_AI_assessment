@@ -41,22 +41,90 @@ uvicorn app.main:app --reload
 curl http://localhost:8000/health
 ```
 
+## File Upload And MIME Routing API
+
+The service stores uploaded files in `uploads/` by default and writes JSON metadata
+beside them in `uploads/.metadata/`. Configure the location and size limit with
+`UPLOAD_DIR` and `MAX_FILE_SIZE_MB` in `.env`.
+
+Each upload is MIME-routed after it is saved using `python-magic` when available,
+with filename/content-type fallback. The route is included in the upload response
+as `mime_route` and is available later from `GET /files/{file_id}/route`.
+
+Supported routes:
+
+- `pdf` for `application/pdf`
+- `image_ocr` for PNG, JPEG/JPG, and TIFF images
+- `docx` for Word documents
+- `text` for text-like files such as TXT, CSV, JSON, XML, Markdown, and RTF
+- `unsupported` when no ingestion route exists yet
+
+PDFs are classified before processing:
+
+- `digital_pdf` uses `direct_extraction`
+- `scanned_pdf` uses `ocr`
+- `hybrid_pdf` uses `extraction_with_ocr_fallback`
+
+Image uploads can be preprocessed for OCR with OpenCV:
+
+- grayscale
+- denoise
+- resize
+- adaptive threshold
+- sharpen
+
+```bash
+# Upload a file
+curl -F "file=@contract.pdf" http://localhost:8000/files
+
+# List uploaded files
+curl http://localhost:8000/files
+
+# Inspect MIME routing for an upload
+curl http://localhost:8000/files/{file_id}/route
+
+# Preprocess an image upload for OCR
+curl -X POST http://localhost:8000/files/{file_id}/preprocess
+
+# Download a file by id
+curl -OJ http://localhost:8000/files/{file_id}/download
+
+# Delete a file by id
+curl -X DELETE http://localhost:8000/files/{file_id}
+```
+
 ## Project Structure
 
 ```
 app/
-├── __init__.py
-├── main.py                   # FastAPI app factory
-├── config.py                 # pydantic-settings (env / .env)
-├── api/                      # Route handlers (upload, search, feedback, eval)
-├── ingestion/                # MIME detection, validation, chunking
-├── ocr/                      # OCR abstraction + Tesseract / Azure processors
-├── extraction/               # Text / PDF / image / DOCX extractors
-├── retrieval/                # Qdrant vector store + hybrid search
-├── generation/               # Ollama LLM wrapper + prompt templates
-├── feedback/                 # User feedback collection & storage
-├── evaluation/               # Eval metrics & runner
-├── models/                   # Pydantic schemas (document, search, generation)
-├── utils/                    # File storage, logging, shared helpers
-└── tests/                    # pytest suite
+├── api/
+│   ├── routes/               # FastAPI route handlers
+│   ├── schemas/              # API request/response schemas
+│   └── dependencies/         # FastAPI dependency providers
+├── ingestion/                # MIME routing, PDF classification, OCR prep
+├── extraction/               # Cleaning, metadata, sections, chunk assembly
+├── chunking/                 # Recursive/semantic chunking and overlap
+├── embeddings/               # Embedding service, model loader, vectorizer
+├── vectordb/                 # Qdrant client, collections, indexing
+├── retrieval/                # Dense, BM25, hybrid retrieval, reranking
+├── generation/               # Prompts, grounded generation, citations
+├── feedback/                 # User edit/retrieval feedback learning
+├── evaluation/               # Retrieval, grounding, OCR metrics
+├── storage/                  # File store, metadata store, cache
+├── models/                   # Domain models
+├── utils/                    # Config, logging, helpers, exceptions
+└── main.py
+
+data/
+├── raw/
+├── processed/
+├── chunks/
+├── embeddings/
+└── feedback/
+
+tests/
+├── ingestion/
+├── retrieval/
+├── generation/
+└── feedback/
 ```

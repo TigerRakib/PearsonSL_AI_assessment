@@ -1,0 +1,1 @@
+"""Extraction quality validation placeholder."""

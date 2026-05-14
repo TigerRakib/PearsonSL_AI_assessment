@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.uploads import router as upload_router
-from app.config import settings
+from app.api.routes.uploads import router as upload_router
+from app.utils.config import settings
 
 
 @asynccontextmanager
