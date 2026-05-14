@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException, UploadFile, status
 
+from app.ingestion.mime_router import route_mime
 from app.models.uploads import UploadedFile
 
 CHUNK_SIZE = 1024 * 1024
@@ -53,11 +54,13 @@ class FileStorage:
                 detail="Uploaded file is empty.",
             )
 
+        mime_route = route_mime(destination, file.content_type)
         uploaded_file = UploadedFile(
             id=file_id,
             original_filename=original_filename,
             stored_filename=stored_filename,
             content_type=file.content_type,
+            mime_route=mime_route,
             size_bytes=size_bytes,
             uploaded_at=datetime.now(timezone.utc),
             download_url=f"/files/{file_id}/download",

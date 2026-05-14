@@ -18,10 +18,16 @@ def test_upload_list_download_and_delete_file(tmp_path):
     uploaded_file = upload_response.json()
     assert uploaded_file["original_filename"] == "case_notes.txt"
     assert uploaded_file["size_bytes"] == len(b"important evidence")
+    assert uploaded_file["mime_route"]["route"] == "text"
+    assert uploaded_file["mime_route"]["is_supported"] is True
 
     list_response = client.get("/files")
     assert list_response.status_code == 200
     assert list_response.json()["files"][0]["id"] == uploaded_file["id"]
+
+    route_response = client.get(f"/files/{uploaded_file['id']}/route")
+    assert route_response.status_code == 200
+    assert route_response.json()["route"] == "text"
 
     download_response = client.get(uploaded_file["download_url"])
     assert download_response.status_code == 200

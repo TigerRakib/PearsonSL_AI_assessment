@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi.responses import FileResponse
 
 from app.config import settings
+from app.models.mime import MimeRoute
 from app.models.uploads import DeleteResponse, UploadedFile, UploadList
 from app.utils.file_storage import FileStorage
 
@@ -42,6 +43,14 @@ async def download_file(
         media_type=uploaded_file.content_type,
         filename=uploaded_file.original_filename,
     )
+
+
+@router.get("/{file_id}/route", response_model=MimeRoute, summary="Get MIME route")
+async def get_file_route(
+    file_id: str,
+    storage: FileStorage = Depends(get_storage),
+) -> MimeRoute:
+    return storage.get(file_id).mime_route
 
 
 @router.delete(

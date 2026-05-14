@@ -2,12 +2,15 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.models.mime import MimeRoute
+
 
 class UploadedFile(BaseModel):
     id: str
     original_filename: str
     stored_filename: str
     content_type: str | None = None
+    mime_route: MimeRoute
     size_bytes: int = Field(ge=0)
     uploaded_at: datetime
     download_url: str
